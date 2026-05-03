@@ -36,13 +36,13 @@ interface AuthContextType {
 
 const mockUsers: { email: string; password: string; user: User }[] = [
   {
-    email: "admin@eolicanorte.com",
+    email: "admin@cisneiot.cl",
     password: "admin123",
     user: {
       id: "1",
-      name: "Carlos Rodríguez",
-      email: "admin@eolicanorte.com",
-      company: "Eólica Norte S.A.",
+      name: "Operador1",
+      email: "admin@cisneiot.cl",
+      company: "Parque Eólico San Juan.",
     },
   },
   {
@@ -61,16 +61,11 @@ const mockPlants: Record<string, WindPlant[]> = {
   "1": [
     {
       id: "plant-1",
-      name: "Parque Eólico La Ventosa",
-      location: "Oaxaca, México",
+      name: "Parque Eólico San Juan",
+      location: "Región de Atacama, Chile",
       turbineCount: 6,
       turbines: [
         { id: "t1", name: "Turbina A1", x: 15, y: 20, birdCount: 127, lastDetection: "hace 5 min", status: "online" },
-        { id: "t2", name: "Turbina A2", x: 35, y: 15, birdCount: 89, lastDetection: "hace 12 min", status: "online" },
-        { id: "t3", name: "Turbina A3", x: 55, y: 25, birdCount: 156, lastDetection: "hace 2 min", status: "online" },
-        { id: "t4", name: "Turbina B1", x: 20, y: 55, birdCount: 203, lastDetection: "hace 8 min", status: "maintenance" },
-        { id: "t5", name: "Turbina B2", x: 45, y: 60, birdCount: 78, lastDetection: "hace 1 min", status: "online" },
-        { id: "t6", name: "Turbina B3", x: 70, y: 50, birdCount: 112, lastDetection: "hace 3 min", status: "online" },
       ],
     },
     {
