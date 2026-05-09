@@ -4,8 +4,8 @@ import { useState, useEffect } from "react"
 import { WindPlant, Turbine } from "@/lib/auth-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Bird, Camera, Clock, MapPin, AlertTriangle,
-  CheckCircle, Wrench, Video, VideoOff, Image, RefreshCw } from "lucide-react"
+import { ArrowLeft, Bird, Clock, MapPin, AlertTriangle,
+  CheckCircle, Wrench, Image, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const API_URL = "http://201.239.225.78:8000/detecciones"
@@ -26,7 +26,6 @@ interface TurbineMapProps {
 
 export function TurbineMap({ plant, onBack }: TurbineMapProps) {
   const [selectedTurbine, setSelectedTurbine] = useState<Turbine | null>(null)
-  const [isLiveActive, setIsLiveActive] = useState(false)
   const [deteccion, setDeteccion] = useState<Deteccion | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<string>("")
@@ -53,7 +52,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
 
   const getStatusColor = (status: Turbine["status"]) => {
     switch (status) {
-      case "online": return "bg-accent"
+      case "online": return "bg-green-500"
       case "offline": return "bg-destructive"
       case "maintenance": return "bg-yellow-500"
     }
@@ -67,7 +66,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
     }
   }
 
-  const totalBirds = deteccion?.cantidad_aves ?? 
+  const totalBirds = deteccion?.cantidad_aves ??
     plant.turbines.reduce((s, t) => s + t.birdCount, 0)
   const onlineTurbines = plant.turbines.filter(t => t.status === "online").length
 
@@ -111,38 +110,45 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
             <CardTitle className="text-lg">Vista aérea de la planta</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-gradient-to-br from-green-900/30 via-green-800/20 to-green-900/30">
-              <div className="absolute inset-0 opacity-10">
-                {[...Array(10)].map((_, i) => (
-                  <div key={`h-${i}`} className="absolute left-0 right-0 h-px bg-foreground" style={{ top: `${i * 10}%` }} />
-                ))}
-                {[...Array(10)].map((_, i) => (
-                  <div key={`v-${i}`} className="absolute bottom-0 top-0 w-px bg-foreground" style={{ left: `${i * 10}%` }} />
-                ))}
-              </div>
+            <div
+              className="relative aspect-[16/10] overflow-hidden rounded-lg"
+              style={{
+                backgroundImage: "url('/parque.png')",
+                backgroundSize: "cover",
+                backgroundPosition: "center top"
+              }}
+            >
+              {/* Turbine icons */}
               {plant.turbines.map((turbine) => (
                 <button
                   key={turbine.id}
                   onClick={() => setSelectedTurbine(turbine)}
                   className={cn(
-                    "group absolute flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 transition-all hover:scale-110",
+                    "group absolute flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 transition-all hover:scale-110",
                     selectedTurbine?.id === turbine.id
-                      ? "border-primary bg-primary text-primary-foreground scale-110 z-10"
-                      : "border-foreground/20 bg-background/90 hover:border-primary"
+                      ? "border-white bg-primary text-white scale-110 z-10"
+                      : "border-white bg-white/80 text-gray-800 hover:bg-primary hover:text-white"
                   )}
                   style={{ left: `${turbine.x}%`, top: `${turbine.y}%` }}
                 >
-                  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <circle cx="12" cy="12" r="2" />
-                    <path d="M12 10V2" /><path d="M12 14l-6.9 4" /><path d="M12 14l6.9 4" />
+                    <path d="M12 10V2" />
+                    <path d="M12 14l-6.9 4" />
+                    <path d="M12 14l6.9 4" />
                   </svg>
-                  <div className={cn("absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-background", getStatusColor(turbine.status))} />
+                  <div className={cn(
+                    "absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white",
+                    getStatusColor(turbine.status)
+                  )} />
                 </button>
               ))}
-              <div className="absolute bottom-3 left-3 flex gap-3 rounded-lg bg-background/80 px-3 py-2 text-xs backdrop-blur-sm">
-                <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-accent" />En línea</div>
+
+              {/* Legend */}
+              <div className="absolute bottom-3 left-3 flex gap-3 rounded-lg bg-black/50 px-3 py-2 text-xs text-white backdrop-blur-sm">
+                <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-green-500" />En línea</div>
                 <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-yellow-500" />Mantenimiento</div>
-                <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-destructive" />Fuera de línea</div>
+                <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-red-500" />Fuera de línea</div>
               </div>
             </div>
           </CardContent>
@@ -159,7 +165,10 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
             {selectedTurbine ? (
               <div className="space-y-6">
                 <div className="flex items-center gap-2">
-                  <div className={cn("flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium text-white", getStatusColor(selectedTurbine.status))}>
+                  <div className={cn(
+                    "flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium text-white",
+                    getStatusColor(selectedTurbine.status)
+                  )}>
                     {getStatusIcon(selectedTurbine.status)}
                     {selectedTurbine.status === "online" && "En línea"}
                     {selectedTurbine.status === "offline" && "Fuera de línea"}
