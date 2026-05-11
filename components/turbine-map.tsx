@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { WindPlant, Turbine } from "@/lib/auth-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,8 @@ import { ArrowLeft, Bird, Camera, Clock, MapPin, AlertTriangle,
 import { cn } from "@/lib/utils"
 
 const API_URL = "http://201.239.225.78:8000/detecciones"
+const STREAM_URL = "http://201.239.225.78:8888/camara1/index.m3u8"
+const STREAM_TIMEOUT = 60
 
 interface Deteccion {
   created_at: string
@@ -27,9 +29,12 @@ interface TurbineMapProps {
 export function TurbineMap({ plant, onBack }: TurbineMapProps) {
   const [selectedTurbine, setSelectedTurbine] = useState<Turbine | null>(null)
   const [isLiveActive, setIsLiveActive] = useState(false)
+  const [countdown, setCountdown] = useState(STREAM_TIMEOUT)
   const [deteccion, setDeteccion] = useState<Deteccion | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<string>("")
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const countdownRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchDeteccion = async () => {
     try {
@@ -50,6 +55,41 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
     const interval = setInterval(fetchDeteccion, 10000)
     return () => clearInterval(interval)
   }, [])
+
+  // Limpia timers al desmontar
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      if (countdownRef.current) clearInterval(countdownRef.current)
+    }
+  }, [])
+
+  const activarStream = () => {
+    setIsLiveActive(true)
+    setCountdown(STREAM_TIMEOUT)
+
+    timerRef.current = setTimeout(() => {
+      setIsLiveActive(false)
+      setCountdown(STREAM_TIMEOUT)
+    }, STREAM_TIMEOUT * 1000)
+
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownRef.current!)
+          return STREAM_TIMEOUT
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  const desactivarStream = () => {
+    setIsLiveActive(false)
+    setCountdown(STREAM_TIMEOUT)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    if (countdownRef.current) clearInterval(countdownRef.current)
+  }
 
   const getStatusColor = (status: Turbine["status"]) => {
     switch (status) {
@@ -143,7 +183,6 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                   )} />
                 </button>
               ))}
-
               <div className="absolute bottom-3 left-3 flex gap-3 rounded-lg bg-black/50 px-3 py-2 text-xs text-white backdrop-blur-sm">
                 <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-green-500" />En línea</div>
                 <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-yellow-500" />Mantenimiento</div>
@@ -202,7 +241,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                   </div>
                 </div>
 
-                {/* Última foto real desde API */}
+                {/* Última foto real */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Image className="h-4 w-4 text-primary" />
@@ -236,7 +275,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
                             <span className="relative inline-flex h-2 w-2 rounded-full bg-destructive"></span>
                           </span>
-                          <span className="text-xs text-destructive">EN VIVO</span>
+                          <span className="text-xs text-destructive font-mono font-bold">{countdown}s</span>
                         </span>
                       )}
                     </div>
@@ -244,7 +283,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                       <Button
                         variant={isLiveActive ? "destructive" : "outline"}
                         size="sm"
-                        onClick={() => setIsLiveActive(!isLiveActive)}
+                        onClick={() => isLiveActive ? desactivarStream() : activarStream()}
                         className="h-8 gap-1.5"
                       >
                         {isLiveActive ? (
@@ -257,12 +296,16 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                   </div>
 
                   {isLiveActive && selectedTurbine.status === "online" ? (
-                    <div className="relative aspect-video overflow-hidden rounded-lg bg-muted">
-                      <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-                        Conectando cámara...
-                      </div>
+                    <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
+                      <video
+                        autoPlay
+                        muted
+                        controls
+                        className="h-full w-full object-cover"
+                        src={STREAM_URL}
+                      />
                       <div className="absolute bottom-2 left-2 rounded bg-background/80 px-2 py-1 text-xs font-medium backdrop-blur-sm">
-                        {selectedTurbine.name} - TRANSMITIENDO
+                        {selectedTurbine.name} — cerrando en {countdown}s
                       </div>
                       <div className="absolute right-2 top-2 rounded bg-destructive px-2 py-1 text-xs font-medium text-white">
                         EN VIVO
@@ -274,7 +317,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                         <>
                           <VideoOff className="mb-2 h-8 w-8" />
                           <p className="text-sm">Feed desactivado</p>
-                          <p className="text-xs">Activa para ver en tiempo real</p>
+                          <p className="text-xs">Activa para ver en tiempo real (60s)</p>
                         </>
                       ) : (
                         <>
