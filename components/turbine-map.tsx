@@ -9,7 +9,7 @@ import { ArrowLeft, Bird, Camera, Clock, MapPin, AlertTriangle,
 import { cn } from "@/lib/utils"
 
 const API_URL = "http://201.239.225.78:8000/detecciones"
-const STREAM_URL = "http://201.239.225.78:8888/camara1/index.m3u8"
+const STREAM_URL = "http://201.239.225.78:8888/camara1"
 const STREAM_TIMEOUT = 60
 
 interface Deteccion {
@@ -56,7 +56,6 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
     return () => clearInterval(interval)
   }, [])
 
-  // Limpia timers al desmontar
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -297,12 +296,10 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
 
                   {isLiveActive && selectedTurbine.status === "online" ? (
                     <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
-                      <video
-                        autoPlay
-                        muted
-                        controls
-                        className="h-full w-full object-cover"
+                      <iframe
                         src={STREAM_URL}
+                        className="h-full w-full border-0"
+                        allowFullScreen
                       />
                       <div className="absolute bottom-2 left-2 rounded bg-background/80 px-2 py-1 text-xs font-medium backdrop-blur-sm">
                         {selectedTurbine.name} — cerrando en {countdown}s
