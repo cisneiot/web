@@ -9,7 +9,7 @@ import { ArrowLeft, Bird, Camera, Clock, MapPin, AlertTriangle,
 import { cn } from "@/lib/utils"
 
 const API_URL = "http://201.239.225.78:8000/detecciones"
-const STREAM_URL = "http://201.239.225.78:8888/camara1"
+const STREAM_URL = "https://utc-bibliographic-residents-facial.trycloudflare.com/camara1"
 const STREAM_TIMEOUT = 60
 
 interface Deteccion {
