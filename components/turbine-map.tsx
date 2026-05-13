@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 
 const API_URL = "https://cisneiot.duckdns.org:8000/detecciones"
 const STREAM_URL = "https://cisneiot.duckdns.org:8888/camara1"
+const STREAM_API = "https://cisneiot.duckdns.org:8000/stream"
 const STREAM_TIMEOUT = 60
 
 interface Deteccion {
@@ -63,11 +64,22 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
     }
   }, [])
 
-  const activarStream = () => {
+  const activarStream = async () => {
+    try {
+      await fetch(`${STREAM_API}/activar`, { method: "POST" })
+    } catch (e) {
+      console.error("Error activando stream:", e)
+    }
+
     setIsLiveActive(true)
     setCountdown(STREAM_TIMEOUT)
 
-    timerRef.current = setTimeout(() => {
+    timerRef.current = setTimeout(async () => {
+      try {
+        await fetch(`${STREAM_API}/desactivar`, { method: "POST" })
+      } catch (e) {
+        console.error("Error desactivando stream:", e)
+      }
       setIsLiveActive(false)
       setCountdown(STREAM_TIMEOUT)
     }, STREAM_TIMEOUT * 1000)
@@ -83,7 +95,12 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
     }, 1000)
   }
 
-  const desactivarStream = () => {
+  const desactivarStream = async () => {
+    try {
+      await fetch(`${STREAM_API}/desactivar`, { method: "POST" })
+    } catch (e) {
+      console.error("Error desactivando stream:", e)
+    }
     setIsLiveActive(false)
     setCountdown(STREAM_TIMEOUT)
     if (timerRef.current) clearTimeout(timerRef.current)
