@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 const API_URL = "https://cisneiot.duckdns.org:8000/detecciones"
 const STREAM_URL = "https://cisneiot.duckdns.org:8888/camara1"
 const STREAM_API = "https://cisneiot.duckdns.org:8000/stream"
+const CAMARA_STATUS_URL = "https://cisneiot.duckdns.org:8000/camara/status"
 const STREAM_TIMEOUT = 60
 
 interface Deteccion {
@@ -34,6 +35,8 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
   const [deteccion, setDeteccion] = useState<Deteccion | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<string>("")
+  const [cameraOnline, setCameraOnline] = useState(false)
+  const [streamReady, setStreamReady] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const countdownRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -51,10 +54,25 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
     }
   }
 
+  const checkCameraStatus = async () => {
+    try {
+      const res = await fetch(CAMARA_STATUS_URL, { cache: "no-store" })
+      const data = await res.json()
+      setCameraOnline(data.online)
+    } catch {
+      setCameraOnline(false)
+    }
+  }
+
   useEffect(() => {
     fetchDeteccion()
+    checkCameraStatus()
     const interval = setInterval(fetchDeteccion, 10000)
-    return () => clearInterval(interval)
+    const cameraInterval = setInterval(checkCameraStatus, 30000)
+    return () => {
+      clearInterval(interval)
+      clearInterval(cameraInterval)
+    }
   }, [])
 
   useEffect(() => {
@@ -72,7 +90,10 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
     }
 
     setIsLiveActive(true)
+    setStreamReady(false)
     setCountdown(STREAM_TIMEOUT)
+
+    setTimeout(() => setStreamReady(true), 3000)
 
     timerRef.current = setTimeout(async () => {
       try {
@@ -81,6 +102,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
         console.error("Error desactivando stream:", e)
       }
       setIsLiveActive(false)
+      setStreamReady(false)
       setCountdown(STREAM_TIMEOUT)
     }, STREAM_TIMEOUT * 1000)
 
@@ -102,6 +124,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
       console.error("Error desactivando stream:", e)
     }
     setIsLiveActive(false)
+    setStreamReady(false)
     setCountdown(STREAM_TIMEOUT)
     if (timerRef.current) clearTimeout(timerRef.current)
     if (countdownRef.current) clearInterval(countdownRef.current)
@@ -195,7 +218,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                   </svg>
                   <div className={cn(
                     "absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white",
-                    getStatusColor(turbine.status)
+                    cameraOnline ? "bg-green-500" : "bg-destructive"
                   )} />
                 </button>
               ))}
@@ -218,12 +241,15 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
           <CardContent>
             {selectedTurbine ? (
               <div className="space-y-6">
+
+                {/* Estado real de la cámara */}
                 <div className="flex items-center gap-2">
-                  <div className={cn("flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium text-white", getStatusColor(selectedTurbine.status))}>
-                    {getStatusIcon(selectedTurbine.status)}
-                    {selectedTurbine.status === "online" && "En línea"}
-                    {selectedTurbine.status === "offline" && "Fuera de línea"}
-                    {selectedTurbine.status === "maintenance" && "Mantenimiento"}
+                  <div className={cn(
+                    "flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium text-white",
+                    cameraOnline ? "bg-green-500" : "bg-destructive"
+                  )}>
+                    {cameraOnline ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                    {cameraOnline ? "En línea" : "Sin conexión"}
                   </div>
                 </div>
 
@@ -285,7 +311,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                     <div className="flex items-center gap-2">
                       <Camera className="h-4 w-4 text-primary" />
                       <span className="text-sm font-medium">Cámara en vivo</span>
-                      {isLiveActive && selectedTurbine.status === "online" && (
+                      {isLiveActive && cameraOnline && (
                         <span className="flex items-center gap-1">
                           <span className="relative flex h-2 w-2">
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
@@ -295,7 +321,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                         </span>
                       )}
                     </div>
-                    {selectedTurbine.status === "online" && (
+                    {cameraOnline && (
                       <Button
                         variant={isLiveActive ? "destructive" : "outline"}
                         size="sm"
@@ -311,13 +337,19 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                     )}
                   </div>
 
-                  {isLiveActive && selectedTurbine.status === "online" ? (
+                  {isLiveActive && cameraOnline ? (
                     <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
-                      <iframe
-                        src={STREAM_URL}
-                        className="h-full w-full border-0"
-                        allowFullScreen
-                      />
+                      {streamReady ? (
+                        <iframe
+                          src={STREAM_URL}
+                          className="h-full w-full border-0"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-white text-sm">
+                          Iniciando cámara...
+                        </div>
+                      )}
                       <div className="absolute bottom-2 left-2 rounded bg-background/80 px-2 py-1 text-xs font-medium backdrop-blur-sm">
                         {selectedTurbine.name} — cerrando en {countdown}s
                       </div>
@@ -327,7 +359,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                     </div>
                   ) : (
                     <div className="flex aspect-video flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/50 text-muted-foreground">
-                      {selectedTurbine.status === "online" ? (
+                      {cameraOnline ? (
                         <>
                           <VideoOff className="mb-2 h-8 w-8" />
                           <p className="text-sm">Feed desactivado</p>
@@ -337,7 +369,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                         <>
                           <Camera className="mb-2 h-8 w-8" />
                           <p className="text-sm">Cámara no disponible</p>
-                          <p className="text-xs">Turbina fuera de línea</p>
+                          <p className="text-xs">Sin conexión</p>
                         </>
                       )}
                     </div>
@@ -378,7 +410,9 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <div className={cn("h-2 w-2 rounded-full", getStatusColor(turbine.status))} />
+                  <div className={cn("h-2 w-2 rounded-full",
+                    cameraOnline ? "bg-green-500" : "bg-destructive"
+                  )} />
                   <div>
                     <p className="font-medium">{turbine.name}</p>
                     <p className="text-xs text-muted-foreground">{turbine.lastDetection}</p>
