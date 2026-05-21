@@ -8,12 +8,19 @@ import { ArrowLeft, Bird, Camera, Clock, MapPin, AlertTriangle,
   CheckCircle, Wrench, Video, VideoOff, Image, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const API_URL = "https://cisneiot.duckdns.org:8000/detecciones"
+
+const API_URL = "https://cisneiot.duckdns.org/detecciones"
+const STREAM_URL = "https://cisneiot.duckdns.org:8888/camara1"
+const STREAM_API = "https://cisneiot.duckdns.org/stream"
+const CAMARA_STATUS_URL = "https://cisneiot.duckdns.org/camara/status"
+const STREAM_TIMEOUT = 60
+
+/*const API_URL = "https://cisneiot.duckdns.org:8000/detecciones"
 const STREAM_URL = "https://cisneiot.duckdns.org:8888/camara1"
 const STREAM_API = "https://cisneiot.duckdns.org:8000/stream"
 const CAMARA_STATUS_URL = "https://cisneiot.duckdns.org:8000/camara/status"
 const STREAM_TIMEOUT = 60
-
+*/
 interface Deteccion {
   created_at: string
   nombre_imagen: string
