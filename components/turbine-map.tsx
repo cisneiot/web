@@ -9,10 +9,10 @@ import { ArrowLeft, Bird, Camera, Clock, MapPin, AlertTriangle,
 import { cn } from "@/lib/utils"
 
 
-const API_URL = "https://cisneiot.duckdns.org/detecciones"
+const API_URL = "https://api.cisneiot.cl/detecciones"
 const STREAM_URL = "https://cisneiot.duckdns.org:8888/camara1"
-const STREAM_API = "https://cisneiot.duckdns.org/stream"
-const CAMARA_STATUS_URL = "https://cisneiot.duckdns.org/camara/status"
+const STREAM_API = "https://api.cisneiot.cl/stream"
+const CAMARA_STATUS_URL = "https://api.cisneiot.cl/camara/status"
 const STREAM_TIMEOUT = 60
 
 /*const API_URL = "https://cisneiot.duckdns.org:8000/detecciones"
@@ -20,6 +20,8 @@ const STREAM_URL = "https://cisneiot.duckdns.org:8888/camara1"
 const STREAM_API = "https://cisneiot.duckdns.org:8000/stream"
 const CAMARA_STATUS_URL = "https://cisneiot.duckdns.org:8000/camara/status"
 const STREAM_TIMEOUT = 60*/
+
+
 
 interface Deteccion {
   created_at: string
