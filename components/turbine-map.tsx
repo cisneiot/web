@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils"
 
 
 const API_URL = "https://api.cisneiot.cl/detecciones"
-const STREAM_URL = "https://cisneiot.duckdns.org:8888/camara1"
 const STREAM_API = "https://api.cisneiot.cl/stream"
+const STREAM_URL = "https://api.cisneiot.cl/stream/camara1/index.m3u8"
 const CAMARA_STATUS_URL = "https://api.cisneiot.cl/camara/status"
 const STREAM_TIMEOUT = 60
 
