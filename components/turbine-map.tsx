@@ -21,8 +21,6 @@ const STREAM_API = "https://cisneiot.duckdns.org:8000/stream"
 const CAMARA_STATUS_URL = "https://cisneiot.duckdns.org:8000/camara/status"
 const STREAM_TIMEOUT = 60*/
 
-w
-
 interface Deteccion {
   created_at: string
   nombre_imagen: string
