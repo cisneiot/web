@@ -3,9 +3,11 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth-context"
 
 export function Navbar() {
   const pathname = usePathname()
+  const { user } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -45,6 +47,19 @@ export function Navbar() {
           >
             Dashboard
           </Link>
+          {user?.role === "admin" && (
+            <Link
+              href="/admin"
+              className={cn(
+                "rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:bg-muted",
+                pathname === "/admin"
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "text-muted-foreground"
+              )}
+            >
+              Admin
+            </Link>
+          )}
         </nav>
       </div>
     </header>

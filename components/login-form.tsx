@@ -106,7 +106,6 @@ export function LoginForm() {
             <div className="mt-4 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
               <p className="font-medium mb-1">Credenciales:</p>
               <p>admin@cisneiot.cl / admin123</p>
-              <p>operador@windpower.com / operador123</p>
             </div>
           </form>
         </CardContent>

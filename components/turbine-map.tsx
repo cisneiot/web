@@ -200,7 +200,7 @@ export function TurbineMap({ plant, onBack }: TurbineMapProps) {
             <div
               className="relative aspect-[16/10] overflow-hidden rounded-lg"
               style={{
-                backgroundImage: "url('/parque1.png')",
+                backgroundImage: `url('${plant.image || "/parque1.png"}')`,
                 backgroundSize: "cover",
                 backgroundPosition: "center top"
               }}
