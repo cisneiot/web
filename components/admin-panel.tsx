@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useAuth, WindPlant, Turbine, User } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Wind, Plus, Pencil, Trash2, MapPin, Upload, ImageIcon } from "lucide-react"
+import { Wind, Plus, Pencil, Trash2, MapPin, Upload, ImageIcon, AlertCircle } from "lucide-react"
 
 export function AdminPanel() {
   const {
@@ -119,7 +119,6 @@ function ImageField({
       <div className="flex items-center gap-3">
         <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-lg border bg-muted">
           {value ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={value || "/placeholder.svg"} alt="Vista del parque" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -197,7 +196,6 @@ function PlantsTab({
           <Card key={p.id}>
             <div className="relative h-32 overflow-hidden rounded-t-xl bg-muted">
               {p.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={p.image || "/placeholder.svg"} alt={p.name} className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -291,6 +289,66 @@ function PlantsTab({
   )
 }
 
+/* ----------------- Posicionador de turbina sobre imagen ----------------- */
+function TurbinePlacer({
+  image,
+  x,
+  y,
+  onChange,
+}: {
+  image: string
+  x: number
+  y: number
+  onChange: (x: number, y: number) => void
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const newX = Math.round(((e.clientX - rect.left) / rect.width) * 100)
+    const newY = Math.round(((e.clientY - rect.top) / rect.height) * 100)
+    onChange(
+      Math.max(0, Math.min(100, newX)),
+      Math.max(0, Math.min(100, newY))
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label>Posición en el mapa</Label>
+      <p className="text-xs text-muted-foreground">Haz clic en la imagen para ubicar la turbina</p>
+      <div
+        ref={containerRef}
+        onClick={handleClick}
+        className="relative aspect-[16/10] w-full cursor-crosshair overflow-hidden rounded-lg border-2 border-dashed border-primary/40 hover:border-primary"
+        style={{
+          backgroundImage: `url('${image}')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Marcador de posición actual */}
+        <div
+          className="pointer-events-none absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-primary shadow-lg"
+          style={{ left: `${x}%`, top: `${y}%` }}
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4 text-white" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="12" cy="12" r="2" />
+            <path d="M12 10V2" />
+            <path d="M12 14l-6.9 4" />
+            <path d="M12 14l6.9 4" />
+          </svg>
+        </div>
+        {/* Coordenadas actuales */}
+        <div className="absolute bottom-2 right-2 rounded bg-black/60 px-2 py-1 text-xs text-white backdrop-blur-sm">
+          X: {x}% · Y: {y}%
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ----------------- Turbinas ----------------- */
 function TurbinesTab({
   plants,
@@ -310,14 +368,17 @@ function TurbinesTab({
   const [form, setForm] = useState({ name: "", x: 50, y: 50, status: "online" as Turbine["status"] })
 
   const plant = plants.find((p) => p.id === selectedPlantId) ?? null
+  const hasImage = !!(plant?.image)
 
   const openNew = () => {
+    if (!hasImage) return
     setEditing(null)
     setForm({ name: `Turbina ${(plant?.turbines.length ?? 0) + 1}`, x: 50, y: 50, status: "online" })
     setOpen(true)
   }
 
   const openEdit = (t: Turbine) => {
+    if (!hasImage) return
     setEditing(t)
     setForm({ name: t.name, x: t.x, y: t.y, status: t.status })
     setOpen(true)
@@ -351,11 +412,25 @@ function TurbinesTab({
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={openNew} disabled={!plant} className="gap-2 sm:self-end">
+        <Button onClick={openNew} disabled={!plant || !hasImage} className="gap-2 sm:self-end">
           <Plus className="h-4 w-4" />
           Nueva turbina
         </Button>
       </div>
+
+      {/* Aviso si la planta no tiene imagen */}
+      {plant && !hasImage && (
+        <div className="flex items-center gap-3 rounded-lg border border-yellow-400/50 bg-yellow-50 p-4 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-medium text-sm">Sube una imagen primero</p>
+            <p className="text-xs mt-0.5">
+              Para agregar o modificar turbinas, la planta <strong>{plant.name}</strong> necesita una foto aérea.
+              Ve a la pestaña <strong>Plantas</strong> y edita esta planta para subir la imagen.
+            </p>
+          </div>
+        </div>
+      )}
 
       {plant && (
         <Card>
@@ -375,7 +450,14 @@ function TurbinesTab({
                     </p>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(t)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => openEdit(t)}
+                      disabled={!hasImage}
+                      title={!hasImage ? "Sube una imagen a la planta primero" : "Editar turbina"}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
@@ -397,64 +479,53 @@ function TurbinesTab({
         </Card>
       )}
 
+      {/* Modal editar/crear turbina */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar turbina" : "Nueva turbina"}</DialogTitle>
             <DialogDescription>
-              La posición X/Y (0-100%) define dónde aparece el punto sobre la foto del parque.
+              Haz clic en la imagen para posicionar la turbina en el mapa.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="t-name">Nombre</Label>
-              <Input
-                id="t-name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Turbina 2"
-              />
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="t-x">Posición X (%)</Label>
+                <Label htmlFor="t-name">Nombre</Label>
                 <Input
-                  id="t-x"
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={form.x}
-                  onChange={(e) => setForm({ ...form, x: Number(e.target.value) })}
+                  id="t-name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="Turbina 2"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="t-y">Posición Y (%)</Label>
-                <Input
-                  id="t-y"
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={form.y}
-                  onChange={(e) => setForm({ ...form, y: Number(e.target.value) })}
-                />
+                <Label>Estado</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(v) => setForm({ ...form, status: v as Turbine["status"] })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="online">En línea</SelectItem>
+                    <SelectItem value="maintenance">Mantenimiento</SelectItem>
+                    <SelectItem value="offline">Fuera de línea</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Estado</Label>
-              <Select
-                value={form.status}
-                onValueChange={(v) => setForm({ ...form, status: v as Turbine["status"] })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="online">En línea</SelectItem>
-                  <SelectItem value="maintenance">Mantenimiento</SelectItem>
-                  <SelectItem value="offline">Fuera de línea</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
+            {/* Imagen interactiva para posicionar */}
+            {plant?.image && (
+              <TurbinePlacer
+                image={plant.image}
+                x={form.x}
+                y={form.y}
+                onChange={(x, y) => setForm({ ...form, x, y })}
+              />
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
